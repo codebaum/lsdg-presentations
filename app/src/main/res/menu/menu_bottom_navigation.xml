@@ -8,15 +8,15 @@
         android:title="UPCOMING"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_past"
-        android:enabled="true"
-        android:icon="@drawable/ic_launcher_foreground"
-        android:title="PAST"
-        app:showAsAction="ifRoom" />
-    <item
         android:id="@+id/action_suggested"
         android:enabled="true"
         android:icon="@drawable/ic_launcher_foreground"
         android:title="SUGGESTED"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_past"
+        android:enabled="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="PAST"
         app:showAsAction="ifRoom" />
 </menu>

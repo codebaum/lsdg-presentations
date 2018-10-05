@@ -41,12 +41,12 @@ class MainActivity : AppCompatActivity() {
                     viewAdapter.filter("upcoming")
                     return@OnNavigationItemSelectedListener true
                 }
-                R.id.action_past -> {
-                    viewAdapter.filter("completed")
-                    return@OnNavigationItemSelectedListener true
-                }
                 R.id.action_suggested -> {
                     viewAdapter.filter("suggested")
+                    return@OnNavigationItemSelectedListener true
+                }
+                R.id.action_past -> {
+                    viewAdapter.filter("completed")
                     return@OnNavigationItemSelectedListener true
                 }
             }
