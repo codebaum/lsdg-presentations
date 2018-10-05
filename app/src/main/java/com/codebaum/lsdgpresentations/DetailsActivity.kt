@@ -5,7 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
+import android.view.View
 import com.codebaum.lsdgpresentations.data.PresentationMapper
+import com.codebaum.lsdgpresentations.data.User
 import com.codebaum.lsdgpresentations.data.UserMapper
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_details.*
@@ -24,6 +26,9 @@ class DetailsActivity : AppCompatActivity() {
     private val db = FirebaseFirestore.getInstance()
 
     private lateinit var presentationId: String
+    private lateinit var user: User
+
+    private var isStarred = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,12 +36,9 @@ class DetailsActivity : AppCompatActivity() {
 
         presentationId = intent.getStringExtra(KEY_PRESENTATION_ID)
 
-        fab_starred.setOnClickListener {
-            Snackbar.make(it, "test", Snackbar.LENGTH_SHORT).show()
-        }
-
         updateContent(presentationId)
         updateFAB()
+        setupFABListener()
     }
 
     private fun updateContent(docId: String) {
@@ -54,12 +56,52 @@ class DetailsActivity : AppCompatActivity() {
     private fun updateFAB() {
         db.collection("users").document("dVu3SiDyQZDh80Bgfwcr").addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
             documentSnapshot?.apply {
-                val user = userMapper.from(documentSnapshot)
-                if (user.starredPresentations.contains(presentationId)) {
-                    fab_starred.setImageResource(android.R.drawable.btn_star_big_on)
-                }
+
+                user = userMapper.from(documentSnapshot)
+
+                isStarred = user.starredPresentations.contains(presentationId)
+
+                updateFABImage()
             }
         }
+    }
+
+    private fun updateFABImage() {
+        val imageRes = if (isStarred) {
+            android.R.drawable.btn_star_big_on
+        } else {
+            android.R.drawable.btn_star_big_off
+        }
+
+        fab_starred.setImageResource(imageRes)
+    }
+
+    private fun setupFABListener() {
+        fab_starred.setOnClickListener {
+
+            isStarred = !isStarred
+
+            updateFABImage()
+
+            showSnackbarMessage(it)
+
+            val updatedStarredPresentations = ArrayList(user.starredPresentations)
+            if (isStarred) {
+                updatedStarredPresentations.add(presentationId)
+            } else {
+                updatedStarredPresentations.remove(presentationId)
+            }
+            db.collection("users").document("dVu3SiDyQZDh80Bgfwcr").update("starred_presentations", updatedStarredPresentations)
+        }
+    }
+
+    private fun showSnackbarMessage(it: View) {
+        val message = if (isStarred) {
+            "Added to favorites!"
+        } else {
+            "Removed from favorites."
+        }
+        Snackbar.make(it, message, Snackbar.LENGTH_SHORT).show()
     }
 
     companion object {
