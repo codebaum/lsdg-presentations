@@ -1,15 +1,20 @@
 package com.codebaum.lsdgpresentations
 
+import android.content.Context
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
+import com.codebaum.lsdgpresentations.data.Presentation
 
 /**
  * Created on 10/5/18.
  */
-class MyAdapter(private val myDataset: ArrayList<String>) :
+class MyAdapter(private val context: Context, private val myDataset: ArrayList<Presentation>) :
         RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
+
+    private var filteredState = "upcoming" // "completed", "suggested"
+    private var filteredDataset: ArrayList<Presentation> = myDataset
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
@@ -34,15 +39,34 @@ class MyAdapter(private val myDataset: ArrayList<String>) :
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        holder.textView.text = myDataset[position]
+        val presentation = filteredDataset[position]
+        holder.textView.text = presentation.name
+
+        holder.textView.setOnClickListener {
+            context.toast(presentation.presenter)
+        }
     }
 
     // Return the size of your dataset (invoked by the layout manager)
-    override fun getItemCount() = myDataset.size
+    override fun getItemCount() = filteredDataset.size
 
-    fun update(newDataset: ArrayList<String>) {
+    fun update(newDataset: ArrayList<Presentation>) {
         myDataset.clear()
         myDataset.addAll(newDataset)
+        filter(filteredState)
+        notifyDataSetChanged()
+    }
+
+    fun filter(state: String) {
+        filteredState = state
+        filteredDataset = arrayListOf()
+
+        for (presentation in myDataset) {
+            if (presentation.state == filteredState) {
+                filteredDataset.add(presentation)
+            }
+        }
+
         notifyDataSetChanged()
     }
 }

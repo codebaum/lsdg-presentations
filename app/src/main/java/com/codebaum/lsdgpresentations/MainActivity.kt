@@ -9,13 +9,15 @@ import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import com.codebaum.lsdgpresentations.data.Presentation
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
-    private val viewAdapter = MyAdapter(arrayListOf())
+    private lateinit var viewAdapter: MyAdapter
     private lateinit var viewManager: RecyclerView.LayoutManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,15 +37,18 @@ class MainActivity : AppCompatActivity() {
 
         bottomNavigationView.setOnNavigationItemSelectedListener(BottomNavigationView.OnNavigationItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.action_favorites ->
-                    // do something here
+                R.id.action_upcoming -> {
+                    viewAdapter.filter("upcoming")
                     return@OnNavigationItemSelectedListener true
-                R.id.action_schedules ->
-                    // do something here
+                }
+                R.id.action_past -> {
+                    viewAdapter.filter("completed")
                     return@OnNavigationItemSelectedListener true
-                R.id.action_music ->
-                    // do something here
+                }
+                R.id.action_suggested -> {
+                    viewAdapter.filter("suggested")
                     return@OnNavigationItemSelectedListener true
+                }
             }
             false
         })
@@ -54,10 +59,18 @@ class MainActivity : AppCompatActivity() {
 
         db.collection("presentations").get().addOnCompleteListener {
             if (it.isSuccessful) {
-                val presentationList = ArrayList<String>()
-                it.result?.forEach { presentation ->
-                    val name = presentation.get("name") as String
-                    presentationList.add(name)
+
+                val presentationList = ArrayList<Presentation>()
+
+                it.result?.forEach { documentSnapshot ->
+
+                    val name = documentSnapshot.get("name") as String
+                    val presenterReference = documentSnapshot.get("presenter") as DocumentReference
+                    val presenter = presenterReference.id
+                    val state = documentSnapshot.get("state") as String
+                    val presentation = Presentation(name, presenter, state)
+
+                    presentationList.add(presentation)
                     name.logDebug()
                 }
                 viewAdapter.update(presentationList)
@@ -71,6 +84,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun buildListView() {
         viewManager = LinearLayoutManager(this)
+
+        viewAdapter = MyAdapter(applicationContext, arrayListOf())
 
         recyclerView = findViewById<RecyclerView>(R.id.rv_presentations).apply {
             // use this setting to improve performance if you know that changes
