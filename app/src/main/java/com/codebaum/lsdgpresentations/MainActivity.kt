@@ -10,11 +10,13 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.codebaum.lsdgpresentations.data.Presentation
-import com.google.firebase.firestore.DocumentReference
+import com.codebaum.lsdgpresentations.data.PresentationMapper
 import com.google.firebase.firestore.FirebaseFirestore
 
 
 class MainActivity : AppCompatActivity() {
+
+    private val presentationMapper = PresentationMapper()
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var viewAdapter: MyAdapter
@@ -57,28 +59,13 @@ class MainActivity : AppCompatActivity() {
     private fun updateListView() {
         val db = FirebaseFirestore.getInstance()
 
-        db.collection("presentations").get().addOnCompleteListener {
-            if (it.isSuccessful) {
-
-                val presentationList = ArrayList<Presentation>()
-
-                it.result?.forEach { documentSnapshot ->
-
-                    val name = documentSnapshot.get("name") as String
-                    val presenterReference = documentSnapshot.get("presenter") as DocumentReference
-                    val presenter = presenterReference.id
-                    val state = documentSnapshot.get("state") as String
-                    val presentation = Presentation(name, presenter, state)
-
-                    presentationList.add(presentation)
-                    name.logDebug()
-                }
-                viewAdapter.update(presentationList)
-            } else {
-                val message = "Error occurred."
-                toast(message)
-                message.logDebug()
+        db.collection("presentations").addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+            val presentationList = ArrayList<Presentation>()
+            querySnapshot?.documents?.forEach {
+                val presentation = presentationMapper.from(it)
+                presentationList.add(presentation)
             }
+            viewAdapter.update(presentationList)
         }
     }
 
