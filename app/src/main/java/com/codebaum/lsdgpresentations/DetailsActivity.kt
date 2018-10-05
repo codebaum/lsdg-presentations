@@ -3,6 +3,7 @@ package com.codebaum.lsdgpresentations
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import com.codebaum.lsdgpresentations.data.PresentationMapper
 import com.google.firebase.firestore.FirebaseFirestore
@@ -33,6 +34,10 @@ class DetailsActivity : AppCompatActivity() {
 
                 title = presentation.name
             }
+        }
+
+        fab_starred.setOnClickListener {
+            Snackbar.make(it, "test", Snackbar.LENGTH_SHORT).show()
         }
     }
 
