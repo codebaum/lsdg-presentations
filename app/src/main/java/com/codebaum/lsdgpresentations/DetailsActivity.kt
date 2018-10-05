@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import com.codebaum.lsdgpresentations.data.PresentationMapper
+import com.codebaum.lsdgpresentations.data.UserMapper
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_details.*
 
@@ -18,14 +19,27 @@ class DetailsActivity : AppCompatActivity() {
     /// starred
 
     private val presentationMapper = PresentationMapper()
+    private val userMapper = UserMapper()
+
+    private val db = FirebaseFirestore.getInstance()
+
+    private lateinit var presentationId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
 
-        val docId = intent.getStringExtra(KEY_DOC_ID)
+        presentationId = intent.getStringExtra(KEY_PRESENTATION_ID)
 
-        val db = FirebaseFirestore.getInstance()
+        fab_starred.setOnClickListener {
+            Snackbar.make(it, "test", Snackbar.LENGTH_SHORT).show()
+        }
+
+        updateContent(presentationId)
+        updateFAB()
+    }
+
+    private fun updateContent(docId: String) {
         db.collection("presentations").document(docId).addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
 
             documentSnapshot?.apply {
@@ -35,19 +49,26 @@ class DetailsActivity : AppCompatActivity() {
                 title = presentation.name
             }
         }
+    }
 
-        fab_starred.setOnClickListener {
-            Snackbar.make(it, "test", Snackbar.LENGTH_SHORT).show()
+    private fun updateFAB() {
+        db.collection("users").document("dVu3SiDyQZDh80Bgfwcr").addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
+            documentSnapshot?.apply {
+                val user = userMapper.from(documentSnapshot)
+                if (user.starredPresentations.contains(presentationId)) {
+                    fab_starred.setImageResource(android.R.drawable.btn_star_big_on)
+                }
+            }
         }
     }
 
     companion object {
 
-        const val KEY_DOC_ID = "KEY_DOC_ID"
+        const val KEY_PRESENTATION_ID = "KEY_PRESENTATION_ID"
 
         fun getStartIntent(context: Context, docId: String): Intent {
             val intent = Intent(context, DetailsActivity::class.java)
-            intent.putExtra(KEY_DOC_ID, docId)
+            intent.putExtra(KEY_PRESENTATION_ID, docId)
             return intent
         }
     }
