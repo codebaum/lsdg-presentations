@@ -72,7 +72,12 @@ class MainActivity : AppCompatActivity() {
     private fun buildListView() {
         viewManager = LinearLayoutManager(this)
 
-        viewAdapter = MyAdapter(applicationContext, arrayListOf())
+        viewAdapter = MyAdapter(applicationContext, object : OnItemClicked {
+            override fun invoke(p1: String) {
+                val intent = DetailsActivity.getStartIntent(this@MainActivity, p1)
+                startActivity(intent)
+            }
+        })
 
         recyclerView = findViewById<RecyclerView>(R.id.rv_presentations).apply {
             // use this setting to improve performance if you know that changes

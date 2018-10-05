@@ -9,10 +9,12 @@ import com.google.firebase.firestore.DocumentSnapshot
 class PresentationMapper {
 
     fun from(documentSnapshot: DocumentSnapshot): Presentation {
+        val id = documentSnapshot.id
         val name = documentSnapshot.get("name") as String
         val presenterReference = documentSnapshot.get("presenter") as DocumentReference
         val presenter = presenterReference.id
         val state = documentSnapshot.get("state") as String
-        return Presentation(name, presenter, state)
+        val description = documentSnapshot.get("description") as String
+        return Presentation(id, name, presenter, state, description)
     }
 }

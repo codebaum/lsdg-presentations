@@ -7,11 +7,15 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.codebaum.lsdgpresentations.data.Presentation
 
+typealias OnItemClicked = (String) -> Unit
+
 /**
  * Created on 10/5/18.
  */
-class MyAdapter(private val context: Context, private val myDataset: ArrayList<Presentation>) :
+class MyAdapter(private val context: Context, private val listener: OnItemClicked) :
         RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
+
+    private val myDataset: ArrayList<Presentation> = arrayListOf()
 
     private var filteredState = "upcoming" // "completed", "suggested"
     private var filteredDataset: ArrayList<Presentation> = myDataset
@@ -43,7 +47,7 @@ class MyAdapter(private val context: Context, private val myDataset: ArrayList<P
         holder.textView.text = presentation.name
 
         holder.textView.setOnClickListener {
-            context.toast(presentation.presenter)
+            listener.invoke(presentation.id)
         }
     }
 
