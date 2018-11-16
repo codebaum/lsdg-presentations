@@ -1,19 +1,20 @@
 package com.codebaum.lsdgpresentations
 
-import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import com.codebaum.lsdgpresentations.data.Presentation
 
-typealias OnItemClicked = (String) -> Unit
+interface OnItemClickListener {
+    fun onItemClicked(id: String)
+}
 
 /**
  * Created on 10/5/18.
  */
-class MyAdapter(private val context: Context, private val listener: OnItemClicked) :
-        RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
+class MyAdapter(private val listener: OnItemClickListener) :
+        androidx.recyclerview.widget.RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
 
     private val myDataset: ArrayList<Presentation> = arrayListOf()
 
@@ -24,7 +25,7 @@ class MyAdapter(private val context: Context, private val listener: OnItemClicke
     // Complex data items may need more than one view per item, and
     // you provide access to all the views for a data item in a view holder.
     // Each data item is just a string in this case that is shown in a TextView.
-    class MyViewHolder(val textView: TextView) : RecyclerView.ViewHolder(textView)
+    class MyViewHolder(val textView: TextView) : androidx.recyclerview.widget.RecyclerView.ViewHolder(textView)
 
 
     // Create new views (invoked by the layout manager)
@@ -47,7 +48,7 @@ class MyAdapter(private val context: Context, private val listener: OnItemClicke
         holder.textView.text = presentation.name
 
         holder.textView.setOnClickListener {
-            listener.invoke(presentation.id)
+            listener.onItemClicked(presentation.id)
         }
     }
 

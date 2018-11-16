@@ -1,26 +1,34 @@
 package com.codebaum.lsdgpresentations
 
-import android.content.Context
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
-import android.support.design.widget.BottomNavigationView
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.util.Log
-import android.view.View
-import android.widget.Toast
+import android.view.Menu
+import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.codebaum.lsdgpresentations.data.Presentation
 import com.codebaum.lsdgpresentations.data.PresentationMapper
+import com.codebaum.lsdgpresentations.data.Repository
+import com.firebase.ui.auth.AuthUI
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
 
     private val presentationMapper = PresentationMapper()
 
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
     private lateinit var viewAdapter: MyAdapter
-    private lateinit var viewManager: RecyclerView.LayoutManager
+    private lateinit var viewManager: androidx.recyclerview.widget.RecyclerView.LayoutManager
+
+    private var user: FirebaseUser? = null
+
+    private val REQUEST_CODE_SIGN_IN: Int = 1
+    private val REQUEST_CODE_VIEW_PROFILE: Int = 2
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,36 +38,57 @@ class MainActivity : AppCompatActivity() {
 
         buildListView()
 
-        updateListView()
+        user = Repository.getStoredUser()
+        if (user == null) {
+            startLoginFlow()
+            return
+        }
 
+        updateView()
+    }
+
+    private fun startLoginFlow() {
+        val providers = arrayListOf(
+                AuthUI.IdpConfig.GoogleBuilder().build(),
+                AuthUI.IdpConfig.EmailBuilder().build(),
+                AuthUI.IdpConfig.PhoneBuilder().build(),
+                AuthUI.IdpConfig.AnonymousBuilder().build())
+
+        // Create and launch sign-in intent
+        startActivityForResult(
+                AuthUI.getInstance()
+                        .createSignInIntentBuilder()
+                        .setAvailableProviders(providers)
+                        .build(),
+                REQUEST_CODE_SIGN_IN)
     }
 
     private fun buildNavigation() {
-        val bottomNavigationView = findViewById<View>(R.id.bottom_navigation) as BottomNavigationView
 
-        bottomNavigationView.setOnNavigationItemSelectedListener(BottomNavigationView.OnNavigationItemSelectedListener { item ->
+        bottom_navigation.setOnNavigationItemSelectedListener { item ->
+            var wasNavigationItemSelectionHandled = true
             when (item.itemId) {
                 R.id.action_upcoming -> {
                     viewAdapter.filter("upcoming")
-                    return@OnNavigationItemSelectedListener true
                 }
                 R.id.action_suggested -> {
                     viewAdapter.filter("suggested")
-                    return@OnNavigationItemSelectedListener true
                 }
                 R.id.action_past -> {
                     viewAdapter.filter("completed")
-                    return@OnNavigationItemSelectedListener true
+                }
+                else -> {
+                    wasNavigationItemSelectionHandled = false
                 }
             }
-            false
-        })
+            wasNavigationItemSelectionHandled
+        }
     }
 
-    private fun updateListView() {
+    private fun updateView() {
         val db = FirebaseFirestore.getInstance()
 
-        db.collection("presentations").addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+        db.collection("presentations").addSnapshotListener { querySnapshot, _ ->
             val presentationList = ArrayList<Presentation>()
             querySnapshot?.documents?.forEach {
                 val presentation = presentationMapper.from(it)
@@ -72,14 +101,14 @@ class MainActivity : AppCompatActivity() {
     private fun buildListView() {
         viewManager = LinearLayoutManager(this)
 
-        viewAdapter = MyAdapter(applicationContext, object : OnItemClicked {
-            override fun invoke(p1: String) {
-                val intent = DetailsActivity.getStartIntent(this@MainActivity, p1)
+        viewAdapter = MyAdapter(object : OnItemClickListener {
+            override fun onItemClicked(id: String) {
+                val intent = DetailsActivity.getStartIntent(this@MainActivity, id)
                 startActivity(intent)
             }
         })
 
-        recyclerView = findViewById<RecyclerView>(R.id.rv_presentations).apply {
+        rv_presentations.apply {
             // use this setting to improve performance if you know that changes
             // in content do not change the layout size of the RecyclerView
             setHasFixedSize(true)
@@ -92,12 +121,50 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
-}
 
-fun Context.toast(message: String) {
-    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-}
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater = menuInflater
+        inflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
 
-fun String.logDebug() {
-    Log.d("DEBUG", this)
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_profile -> {
+                val intent = ProfileActivity.getStartIntent(this)
+                startActivityForResult(intent, REQUEST_CODE_VIEW_PROFILE)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            REQUEST_CODE_SIGN_IN -> handleSignInResult(resultCode)
+            REQUEST_CODE_VIEW_PROFILE -> handleViewProfileResult(resultCode)
+        }
+    }
+
+    private fun handleSignInResult(resultCode: Int) {
+        when (resultCode) {
+            Activity.RESULT_OK -> {
+                val user = FirebaseAuth.getInstance().currentUser
+                this.user = user
+                updateView()
+            }
+            else -> finish()
+        }
+    }
+
+    private fun handleViewProfileResult(resultCode: Int) {
+        when (resultCode) {
+            Activity.RESULT_CANCELED -> finish()
+            else -> {
+                // do nothing
+            }
+        }
+    }
 }
