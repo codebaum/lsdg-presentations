@@ -7,8 +7,10 @@ import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
 import com.codebaum.lsdgpresentations.data.PresentationMapper
+import com.codebaum.lsdgpresentations.data.Repository
 import com.codebaum.lsdgpresentations.data.User
 import com.codebaum.lsdgpresentations.data.UserMapper
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_details.*
 
@@ -20,6 +22,8 @@ class DetailsActivity : AppCompatActivity() {
     /// description
     /// starred
 
+    private val repository = Repository()
+
     private val presentationMapper = PresentationMapper()
     private val userMapper = UserMapper()
 
@@ -27,6 +31,8 @@ class DetailsActivity : AppCompatActivity() {
 
     private lateinit var presentationId: String
     private lateinit var user: User
+
+    private var userDocumentReference: DocumentReference? = null
 
     private var isStarred = false
 
@@ -36,13 +42,17 @@ class DetailsActivity : AppCompatActivity() {
 
         presentationId = intent.getStringExtra(KEY_PRESENTATION_ID)
 
+        repository.currentUser?.apply {
+            userDocumentReference = repository.users.document(uid)
+        }
+
         updateContent(presentationId)
+
         updateFAB()
-        setupFABListener()
     }
 
     private fun updateContent(docId: String) {
-        db.collection("presentations").document(docId).addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
+        repository.presentations.document(docId).addSnapshotListener { documentSnapshot, _ ->
 
             documentSnapshot?.apply {
                 val presentation = presentationMapper.from(documentSnapshot)
@@ -54,15 +64,24 @@ class DetailsActivity : AppCompatActivity() {
     }
 
     private fun updateFAB() {
-        db.collection("users").document("dVu3SiDyQZDh80Bgfwcr").addSnapshotListener { documentSnapshot, firebaseFirestoreException ->
-            documentSnapshot?.apply {
 
-                user = userMapper.from(documentSnapshot)
+        if (userDocumentReference == null) {
+            fab_starred.isEnabled = false
+            return
+        }
 
-                isStarred = user.starredPresentations.contains(presentationId)
+        userDocumentReference?.apply {
+            addSnapshotListener { documentSnapshot, _ ->
+                documentSnapshot?.apply {
 
-                updateFABImage()
+                    user = userMapper.from(documentSnapshot)
+
+                    isStarred = user.starredPresentations.contains(presentationId)
+
+                    updateFABImage()
+                }
             }
+            setupFABListener(this)
         }
     }
 
@@ -76,7 +95,7 @@ class DetailsActivity : AppCompatActivity() {
         fab_starred.setImageResource(imageRes)
     }
 
-    private fun setupFABListener() {
+    private fun setupFABListener(documentReference: DocumentReference) {
         fab_starred.setOnClickListener {
 
             isStarred = !isStarred
@@ -91,7 +110,8 @@ class DetailsActivity : AppCompatActivity() {
             } else {
                 updatedStarredPresentations.remove(presentationId)
             }
-            db.collection("users").document("dVu3SiDyQZDh80Bgfwcr").update("starred_presentations", updatedStarredPresentations)
+
+            documentReference.update("starred_presentations", updatedStarredPresentations)
         }
     }
 

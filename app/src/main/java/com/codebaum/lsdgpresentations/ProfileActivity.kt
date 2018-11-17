@@ -13,20 +13,22 @@ import kotlinx.android.synthetic.main.activity_profile.*
 
 class ProfileActivity : AppCompatActivity() {
 
+    private val repository = Repository()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
 
-        val storedUser = Repository.getStoredUser()
-        if (storedUser == null) {
+        val currentUser = repository.currentUser
+        if (currentUser == null) {
             finish()
             return
         }
 
-        showDetails(storedUser)
+        showDetails(currentUser)
 
         btn_sign_out.setOnClickListener {
-            Repository.signOut()
+            repository.signOut()
             setResult(Activity.RESULT_CANCELED)
             finish()
         }

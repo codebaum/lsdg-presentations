@@ -14,7 +14,7 @@ interface OnItemClickListener {
  * Created on 10/5/18.
  */
 class MyAdapter(private val listener: OnItemClickListener) :
-        androidx.recyclerview.widget.RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
+        RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
 
     private val myDataset: ArrayList<Presentation> = arrayListOf()
 
@@ -25,7 +25,7 @@ class MyAdapter(private val listener: OnItemClickListener) :
     // Complex data items may need more than one view per item, and
     // you provide access to all the views for a data item in a view holder.
     // Each data item is just a string in this case that is shown in a TextView.
-    class MyViewHolder(val textView: TextView) : androidx.recyclerview.widget.RecyclerView.ViewHolder(textView)
+    class MyViewHolder(val textView: TextView) : RecyclerView.ViewHolder(textView)
 
 
     // Create new views (invoked by the layout manager)

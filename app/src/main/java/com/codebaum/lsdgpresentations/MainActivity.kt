@@ -7,33 +7,27 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.codebaum.lsdgpresentations.data.Presentation
 import com.codebaum.lsdgpresentations.data.PresentationMapper
 import com.codebaum.lsdgpresentations.data.Repository
-import com.codebaum.lsdgpresentations.utils.toast
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.IdpResponse
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.android.synthetic.main.activity_main.*
-
-
+import java.util.logging.Level
+import java.util.logging.Logger
 
 
 class MainActivity : AppCompatActivity() {
 
+    private val repository = Repository()
+
     private val presentationMapper = PresentationMapper()
 
-    private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
     private lateinit var viewAdapter: MyAdapter
-    private lateinit var viewManager: androidx.recyclerview.widget.RecyclerView.LayoutManager
-
-    private var user: FirebaseUser? = null
-
-    private val REQUEST_CODE_SIGN_IN: Int = 1
-    private val REQUEST_CODE_VIEW_PROFILE: Int = 2
+    private lateinit var viewManager: RecyclerView.LayoutManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,8 +37,7 @@ class MainActivity : AppCompatActivity() {
 
         buildListView()
 
-        user = Repository.getStoredUser()
-        if (user == null) {
+        if (repository.currentUser == null) {
             startLoginFlow()
             return
         }
@@ -93,7 +86,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateView() {
         val db = FirebaseFirestore.getInstance()
 
-        db.collection("presentations").addSnapshotListener { querySnapshot, _ ->
+        repository.presentations.addSnapshotListener { querySnapshot, _ ->
             val presentationList = ArrayList<Presentation>()
             querySnapshot?.documents?.forEach {
                 val presentation = presentationMapper.from(it)
@@ -147,41 +140,35 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         when (requestCode) {
-            REQUEST_CODE_SIGN_IN -> {
-                val response = IdpResponse.fromResultIntent(data)
-                val isNewUser = response?.isNewUser ?: false
-                handleSignInResult(resultCode, isNewUser)
-            }
+            REQUEST_CODE_SIGN_IN -> handleSignInResult(resultCode, data)
             REQUEST_CODE_VIEW_PROFILE -> handleViewProfileResult(resultCode)
         }
     }
 
-    private fun handleSignInResult(resultCode: Int, isNewUser: Boolean) {
+    private fun handleSignInResult(resultCode: Int, data: Intent?) {
+        val response = IdpResponse.fromResultIntent(data)
+        val isNewUser = response?.isNewUser ?: false
         when (resultCode) {
-            Activity.RESULT_OK -> {
-                user = FirebaseAuth.getInstance().currentUser
-                if (isNewUser) { // use true as temp workaround to force user creation in Firestore DB
-                    createFirestoreUser(user)
-                }
-                updateView()
-            }
+            Activity.RESULT_OK -> handleSuccessfulSignIn(isNewUser)
             else -> finish()
         }
     }
 
-    private fun createFirestoreUser(user: FirebaseUser?) {
-        if (user == null) {
-            // do nothing because we have no user data
-            return
+    private fun handleSuccessfulSignIn(isNewUser: Boolean) {
+        if (isNewUser) {
+            createFirestoreUser()
         }
+        updateView()
+    }
+
+    private fun createFirestoreUser() {
+        val newUser = repository.currentUser ?: return
 
         val userPOJO = hashMapOf<String, Any>()
-        val email = user.email ?: ""
-        userPOJO.put("email", email)
+        userPOJO["email"] = newUser.email ?: ""
+        userPOJO["starred_presentations"] = ArrayList<String>()
 
-        val db = FirebaseFirestore.getInstance()
-        val usersCollection = db.collection("users")
-        val newUserDocument = usersCollection.document(user.uid)
+        val newUserDocument = repository.users.document(newUser.uid)
         newUserDocument.set(userPOJO, SetOptions.merge())
     }
 
@@ -192,5 +179,10 @@ class MainActivity : AppCompatActivity() {
                 // do nothing
             }
         }
+    }
+
+    companion object {
+        private const val REQUEST_CODE_SIGN_IN: Int = 1
+        private const val REQUEST_CODE_VIEW_PROFILE: Int = 2
     }
 }

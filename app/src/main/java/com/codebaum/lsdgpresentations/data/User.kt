@@ -5,6 +5,6 @@ package com.codebaum.lsdgpresentations.data
  */
 data class User(
         val id: String,
-        val email: String,
+        val email: String?,
         val starredPresentations: List<String>
 )
