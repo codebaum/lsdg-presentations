@@ -3,15 +3,13 @@ package com.codebaum.lsdgpresentations
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
 import android.view.View
-import com.codebaum.lsdgpresentations.data.PresentationMapper
-import com.codebaum.lsdgpresentations.data.Repository
-import com.codebaum.lsdgpresentations.data.User
-import com.codebaum.lsdgpresentations.data.UserMapper
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.codebaum.lsdgpresentations.data.*
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.firestore.DocumentReference
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.android.synthetic.main.activity_details.*
 
 class DetailsActivity : AppCompatActivity() {
@@ -27,75 +25,38 @@ class DetailsActivity : AppCompatActivity() {
     private val presentationMapper = PresentationMapper()
     private val userMapper = UserMapper()
 
-    private val db = FirebaseFirestore.getInstance()
+    private lateinit var presentationUID: String
+    private lateinit var userUID: String
 
-    private lateinit var presentationId: String
-    private lateinit var user: User
-
-    private var userDocumentReference: DocumentReference? = null
+    private lateinit var presentationDocumentReference: DocumentReference
+    private lateinit var userDocumentReference: DocumentReference
 
     private var isStarred = false
+
+    private lateinit var user: User
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
 
-        presentationId = intent.getStringExtra(KEY_PRESENTATION_ID)
+        presentationUID = intent.getStringExtra(KEY_PRESENTATION_ID)
+        userUID = repository.currentFirebaseUser?.uid ?: ""
 
-        repository.currentUser?.apply {
-            userDocumentReference = repository.users.document(uid)
-        }
+        presentationDocumentReference = repository.presentations.document(presentationUID)
+        userDocumentReference = repository.users.document(userUID)
 
-        updateContent(presentationId)
-
-        updateFAB()
-    }
-
-    private fun updateContent(docId: String) {
-        repository.presentations.document(docId).addSnapshotListener { documentSnapshot, _ ->
-
-            documentSnapshot?.apply {
-                val presentation = presentationMapper.from(documentSnapshot)
-                tv_description_value.text = presentation.description
-
-                title = presentation.name
+        presentationDocumentReference.addSnapshotListener { documentSnapshot, _ ->
+            if (documentSnapshot != null) {
+                onPresentationSnapshot(documentSnapshot)
             }
         }
-    }
 
-    private fun updateFAB() {
-
-        if (userDocumentReference == null) {
-            fab_starred.isEnabled = false
-            return
-        }
-
-        userDocumentReference?.apply {
-            addSnapshotListener { documentSnapshot, _ ->
-                documentSnapshot?.apply {
-
-                    user = userMapper.from(documentSnapshot)
-
-                    isStarred = user.starredPresentations.contains(presentationId)
-
-                    updateFABImage()
-                }
+        userDocumentReference.addSnapshotListener { documentSnapshot, _ ->
+            if (documentSnapshot != null) {
+                onUserSnapshot(documentSnapshot)
             }
-            setupFABListener(this)
-        }
-    }
-
-    private fun updateFABImage() {
-        val imageRes = if (isStarred) {
-            android.R.drawable.btn_star_big_on
-        } else {
-            android.R.drawable.btn_star_big_off
         }
 
-        fab_starred.setImageResource(imageRes)
-    }
-
-    private fun setupFABListener(documentReference: DocumentReference) {
         fab_starred.setOnClickListener {
 
             isStarred = !isStarred
@@ -106,13 +67,45 @@ class DetailsActivity : AppCompatActivity() {
 
             val updatedStarredPresentations = ArrayList(user.starredPresentations)
             if (isStarred) {
-                updatedStarredPresentations.add(presentationId)
+                updatedStarredPresentations.add(presentationUID)
             } else {
-                updatedStarredPresentations.remove(presentationId)
+                updatedStarredPresentations.remove(presentationUID)
             }
 
-            documentReference.update("starred_presentations", updatedStarredPresentations)
+            userDocumentReference.update("starred_presentations", updatedStarredPresentations)
         }
+    }
+
+    private fun onPresentationSnapshot(snapshot: DocumentSnapshot) {
+
+        val presentation = presentationMapper.from(snapshot)
+
+        if (presentation.isEditableBy(userUID)) {
+            details_coordinator_layout.setBackgroundColor(ContextCompat.getColor(this@DetailsActivity, R.color.primary_dark))
+        }
+
+        tv_description_value.text = presentation.description
+
+        title = presentation.name
+    }
+
+    private fun onUserSnapshot(snapshot: DocumentSnapshot) {
+
+        user = userMapper.from(snapshot)
+
+        isStarred = user.starredPresentations.contains(presentationUID)
+
+        updateFABImage()
+    }
+
+    private fun updateFABImage() {
+        val imageRes = if (isStarred) {
+            android.R.drawable.btn_star_big_on
+        } else {
+            android.R.drawable.btn_star_big_off
+        }
+
+        fab_starred.setImageResource(imageRes)
     }
 
     private fun showSnackbarMessage(it: View) {

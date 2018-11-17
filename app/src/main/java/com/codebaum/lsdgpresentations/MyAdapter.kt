@@ -48,7 +48,7 @@ class MyAdapter(private val listener: OnItemClickListener) :
         holder.textView.text = presentation.name
 
         holder.textView.setOnClickListener {
-            listener.onItemClicked(presentation.id)
+            listener.onItemClicked(presentation.uid)
         }
     }
 

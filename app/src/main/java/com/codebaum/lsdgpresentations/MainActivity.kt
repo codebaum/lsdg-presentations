@@ -16,8 +16,6 @@ import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.logging.Level
-import java.util.logging.Logger
 
 
 class MainActivity : AppCompatActivity() {
@@ -37,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
         buildListView()
 
-        if (repository.currentUser == null) {
+        if (repository.currentFirebaseUser == null) {
             startLoginFlow()
             return
         }
@@ -162,7 +160,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createFirestoreUser() {
-        val newUser = repository.currentUser ?: return
+        val newUser = repository.currentFirebaseUser ?: return
 
         val userPOJO = hashMapOf<String, Any>()
         userPOJO["email"] = newUser.email ?: ""

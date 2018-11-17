@@ -9,15 +9,15 @@ class Repository {
     private val firebaseAuth: FirebaseAuth
         get() = FirebaseAuth.getInstance()
 
-    private val firebaseFirestore: FirebaseFirestore
+    private val database: FirebaseFirestore
         get() = FirebaseFirestore.getInstance()
 
-    val currentUser: FirebaseUser?
+    val currentFirebaseUser: FirebaseUser?
         get() = firebaseAuth.currentUser
 
-    val presentations = firebaseFirestore.collection(PRESENTATIONS_COLLECTION_PATH)
+    val presentations = database.collection(PRESENTATIONS_COLLECTION_PATH)
 
-    val users = firebaseFirestore.collection(Companion.USERS_COLLECTION_PATH)
+    val users = database.collection(Companion.USERS_COLLECTION_PATH)
 
     fun signOut() = firebaseAuth.signOut()
 

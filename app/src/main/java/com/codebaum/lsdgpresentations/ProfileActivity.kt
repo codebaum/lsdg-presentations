@@ -7,8 +7,6 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.codebaum.lsdgpresentations.data.Repository
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.PhoneAuthCredential
-import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.android.synthetic.main.activity_profile.*
 
 class ProfileActivity : AppCompatActivity() {
@@ -19,7 +17,7 @@ class ProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
 
-        val currentUser = repository.currentUser
+        val currentUser = repository.currentFirebaseUser
         if (currentUser == null) {
             finish()
             return
