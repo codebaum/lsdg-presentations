@@ -11,8 +11,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.codebaum.lsdgpresentations.data.Presentation
 import com.codebaum.lsdgpresentations.data.PresentationMapper
 import com.codebaum.lsdgpresentations.data.Repository
+import com.codebaum.lsdgpresentations.utils.RESULT_SIGN_OUT
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.IdpResponse
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.android.synthetic.main.activity_main.*
@@ -41,6 +43,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateView()
+
+        fab_submit.setOnClickListener {
+            val intent = SubmitActivity.getStartIntent(this)
+            startActivityForResult(intent, REQUEST_CODE_SUBMIT_PRESENTATION)
+        }
     }
 
     private fun startLoginFlow() {
@@ -61,17 +68,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun buildNavigation() {
 
+        bottom_navigation.selectedItemId = R.id.action_suggested
+
         bottom_navigation.setOnNavigationItemSelectedListener { item ->
             var wasNavigationItemSelectionHandled = true
             when (item.itemId) {
                 R.id.action_upcoming -> {
                     viewAdapter.filter("upcoming")
+                    fab_submit.hide()
                 }
                 R.id.action_suggested -> {
                     viewAdapter.filter("suggested")
+                    fab_submit.show()
                 }
                 R.id.action_past -> {
                     viewAdapter.filter("completed")
+                    fab_submit.hide()
                 }
                 else -> {
                     wasNavigationItemSelectionHandled = false
@@ -172,7 +184,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleViewProfileResult(resultCode: Int) {
         when (resultCode) {
-            Activity.RESULT_CANCELED -> finish()
+            RESULT_SIGN_OUT -> finish()
             else -> {
                 // do nothing
             }
@@ -182,5 +194,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_SIGN_IN: Int = 1
         private const val REQUEST_CODE_VIEW_PROFILE: Int = 2
+        private const val REQUEST_CODE_SUBMIT_PRESENTATION: Int = 3
     }
 }

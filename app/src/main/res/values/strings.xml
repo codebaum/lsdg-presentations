@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LSDG Presentations</string>
+    <string name="profile_title">Profile</string>
+    <string name="submit_title">New Presentation</string>
 </resources>
